@@ -21,8 +21,8 @@ Enrollment {
 }
 
 Instructor {
-    instructorId        string
-    user                User
+    instructorId         string
+    user                 User
     createdCourses?      Course[]
     feedback?            Feedback[]
 }

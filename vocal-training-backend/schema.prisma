@@ -1,0 +1,137 @@
+// schema.prisma
+
+datasource db {
+    provider = "postgresql" // or your preferred database provider
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+enum Role {
+    admin
+    instructor
+    student
+}
+
+model User {
+    userId   String @id @default(uuid())
+    fullName String
+    role     Role
+
+    // One-to-one (optional) relations:
+    student    Student?
+    instructor Instructor?
+}
+
+model Student {
+    studentId String @id @default(uuid())
+    userId    String @unique
+    user      User   @relation(fields: [userId], references: [userId])
+
+    // Relations:
+    enrolledCourses Enrollment[]
+    recordings      Recording[]
+    certificates    Certificate[]
+}
+
+model Instructor {
+    instructorId String @id @default(uuid())
+    userId       String @unique
+    user         User   @relation(fields: [userId], references: [userId])
+
+    // Relations:
+    createdCourses Course[]
+    feedback       Feedback[]
+}
+
+model Enrollment {
+    enrollmentId       String @id @default(uuid())
+    progressCompletion String
+
+    studentId String
+    courseId  String
+
+    student Student @relation(fields: [studentId], references: [studentId])
+    course  Course  @relation(fields: [courseId], references: [courseId])
+
+    @@unique([studentId, courseId])
+}
+
+model Course {
+    courseId          String @id @default(uuid())
+    courseName        String
+    courseDescription String
+
+    courseInstructorId String
+    courseInstructor   Instructor @relation(fields: [courseInstructorId], references: [instructorId])
+
+    // Relations:
+    courseLessons    Lesson[]
+    studentEnrolled  Enrollment[]
+    courseRecordings Recording[]
+    certificates     Certificate[]
+}
+
+model Lesson {
+    lessonId          String @id @default(uuid())
+    lessonName        String
+    lessonDescription String
+
+    // Storing an array of binary blobs as JSON (adjust as needed)
+    video         Json?
+    audio         Json?
+    practiceGuide String?
+
+    courseId String
+    course   Course @relation(fields: [courseId], references: [courseId])
+}
+
+model Track {
+    trackId      String @id @default(uuid())
+    trackContent Bytes
+
+    // One-to-one optional back relation.
+    recording Recording?
+}
+
+model Recording {
+    recordingId String @id @default(uuid())
+
+    trackId String @unique
+    track   Track  @relation(fields: [trackId], references: [trackId])
+
+    studentId String
+    student   Student @relation(fields: [studentId], references: [studentId])
+
+    courseId String
+    course   Course @relation(fields: [courseId], references: [courseId])
+
+    // One-to-one optional relation with Feedback (relation defined on Feedback)
+    feedback Feedback? @relation("RecordingFeedback")
+}
+
+model Feedback {
+    feedbackId    String @id @default(uuid())
+    feedbackStars Int
+    description   String
+
+    instructorId String
+    instructor   Instructor @relation(fields: [instructorId], references: [instructorId])
+
+    // One-to-one relation with Recording.
+    // The foreign key is stored here and is unique.
+    recordingId String    @unique
+    recording   Recording @relation("RecordingFeedback", fields: [recordingId], references: [recordingId])
+}
+
+model Certificate {
+    certificateId String @id @default(uuid())
+
+    courseId  String
+    studentId String
+
+    course  Course  @relation(fields: [courseId], references: [courseId])
+    student Student @relation(fields: [studentId], references: [studentId])
+}
