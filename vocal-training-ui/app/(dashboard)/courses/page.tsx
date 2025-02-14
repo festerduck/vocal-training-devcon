@@ -58,8 +58,17 @@ export default async function CoursesPage() {
 
       {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course: any) => (
+        {courses.map((course) => (
           <div key={course.courseId} className="bg-white rounded-lg border hover:shadow-md transition-shadow">
+            {/* Course Thumbnail */}
+            <div className="relative h-48 bg-gray-100 rounded-t-lg">
+              <div className="absolute top-3 right-3">
+                <Button variant="ghost" size="icon" className="bg-white/90 rounded-full">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
             {/* Course Info */}
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-2">
@@ -128,4 +137,4 @@ export default async function CoursesPage() {
       )}
     </div>
   );
-} 
+}

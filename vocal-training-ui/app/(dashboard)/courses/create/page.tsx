@@ -1,8 +1,37 @@
+"use client"
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { X } from "lucide-react";
 
 export default function CreateCourse() {
+  const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState("");
+  const [lessons, setLessons] = useState<{ title: string; description: string; duration: string }[]>([]);
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && currentTag.trim()) {
+      e.preventDefault();
+      if (!tags.includes(currentTag.trim())) {
+        setTags([...tags, currentTag.trim()]);
+      }
+      setCurrentTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const addLesson = () => {
+    setLessons([...lessons, { title: "", description: "", duration: "" }]);
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -59,71 +88,99 @@ export default function CreateCourse() {
       <div className="flex gap-8">
         <div className="flex-1">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Course Schedule</h2>
+            <h2 className="text-xl font-semibold mb-2">Course Details</h2>
             <p className="text-gray-600">
-              Decide on the timeframe covered in the course. Whether it's a specific historical period, from the topics you've entered.{" "}
-              <Link href="#" className="text-blue-500">
-                Like this Example
-              </Link>
+              Fill in the basic information about your course to get started.
             </p>
           </div>
 
-          {/* Learning Sections */}
+          {/* Course Form */}
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg border">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Learning 3</h3>
-                <Button variant="outline" size="sm">
-                  Save Schedule
-                </Button>
+              {/* Course Title */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Course Title</label>
+                <Input placeholder="Enter course title" className="w-full" />
               </div>
-              
-              <div className="border rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-yellow-500">⭐</span>
-                  <span className="font-medium">Setting Learning Objectives</span>
-                  <span className="text-sm text-gray-500">Module 1</span>
-                </div>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  placeholder="Select content and settings time for learning"
+
+              {/* Course Description */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Course Description</label>
+                <Textarea
+                  placeholder="Describe your course content and learning objectives"
+                  className="w-full min-h-[100px]"
                 />
               </div>
-            </div>
 
-            {/* Learning Items */}
-            <div className="space-y-4">
-              {/* Learning 1 */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span>⋮⋮</span>
-                    <span className="font-medium">Learning 1</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">Edit</Button>
-                    <Button variant="ghost" size="sm">Delete</Button>
-                  </div>
+              {/* Tags */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Tags</label>
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X
+                        size={14}
+                        className="cursor-pointer"
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
                 </div>
-                <div className="ml-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-yellow-500">💡</span>
-                    <span className="font-medium">Identifying Your Niche</span>
-                    <span className="text-sm text-gray-500">Module 1</span>
-                  </div>
-                  <p className="text-gray-600 mb-2">
-                    We'll delve into finding your area of expertise and how to translate it into a teachable course.
-                  </p>
-                  <div className="text-sm text-gray-500">
-                    Timeframe: March 12, 09:40 - 11:30am
-                  </div>
-                </div>
+                <Input
+                  placeholder="Add tags (press Enter)"
+                  value={currentTag}
+                  onChange={(e) => setCurrentTag(e.target.value)}
+                  onKeyDown={handleAddTag}
+                />
               </div>
 
-              {/* Learning 2 */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                {/* Similar structure to Learning 1 */}
+              {/* Lesson Plans */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Lesson Plans</label>
+                <div className="space-y-4">
+                  {lessons.map((lesson, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <Input
+                        placeholder="Lesson Title"
+                        className="mb-2"
+                        value={lesson.title}
+                        onChange={(e) => {
+                          const newLessons = [...lessons];
+                          newLessons[index].title = e.target.value;
+                          setLessons(newLessons);
+                        }}
+                      />
+                      <Textarea
+                        placeholder="Lesson Description"
+                        className="mb-2"
+                        value={lesson.description}
+                        onChange={(e) => {
+                          const newLessons = [...lessons];
+                          newLessons[index].description = e.target.value;
+                          setLessons(newLessons);
+                        }}
+                      />
+                      <Input
+                        placeholder="Duration (e.g., 1 hour)"
+                        value={lesson.duration}
+                        onChange={(e) => {
+                          const newLessons = [...lessons];
+                          newLessons[index].duration = e.target.value;
+                          setLessons(newLessons);
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={addLesson}
+                    className="w-full"
+                  >
+                    Add Lesson
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -148,7 +205,7 @@ export default function CreateCourse() {
               </div>
             </div>
           </div>
-          
+
           <Calendar />
         </div>
       </div>
