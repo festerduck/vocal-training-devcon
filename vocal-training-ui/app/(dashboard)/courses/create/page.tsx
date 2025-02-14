@@ -8,11 +8,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function CreateCourse() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [courseData, setCourseData] = useState({
+    courseName: "",
+    courseDescription: "",
+  });
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [lessons, setLessons] = useState<{ title: string; description: string; duration: string }[]>([]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCourseData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && currentTag.trim()) {
@@ -30,6 +46,37 @@ export default function CreateCourse() {
 
   const addLesson = () => {
     setLessons([...lessons, { title: "", description: "", duration: "" }]);
+  };
+
+  const handlePublish = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...courseData,
+          tags,
+          lessons
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      router.push('/courses');
+      router.refresh();
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,10 +98,24 @@ export default function CreateCourse() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">Save Update</Button>
-          <Button>Publish Course</Button>
+          <Button variant="outline" disabled={isLoading}>
+            Save Draft
+          </Button>
+          <Button 
+            onClick={handlePublish} 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Publishing...' : 'Publish Course'}
+          </Button>
         </div>
       </div>
+
+      {/* Add error message display */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4 mb-8 border-b pb-4">
@@ -100,13 +161,22 @@ export default function CreateCourse() {
               {/* Course Title */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Course Title</label>
-                <Input placeholder="Enter course title" className="w-full" />
+                <Input
+                  name="courseName"
+                  value={courseData.courseName}
+                  onChange={handleInputChange}
+                  placeholder="Enter course title"
+                  className="w-full"
+                />
               </div>
 
               {/* Course Description */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Course Description</label>
                 <Textarea
+                  name="courseDescription"
+                  value={courseData.courseDescription}
+                  onChange={handleInputChange}
                   placeholder="Describe your course content and learning objectives"
                   className="w-full min-h-[100px]"
                 />

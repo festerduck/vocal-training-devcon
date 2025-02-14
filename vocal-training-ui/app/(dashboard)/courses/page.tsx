@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreVertical, Users, Clock } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { EnrollButton } from "./_components/enroll-button";
 
 async function getCourses(instructorId: string | null = null) {
   try {
@@ -104,9 +105,19 @@ export default async function CoursesPage() {
                   </Link>
                 )}
                 {user?.role === 'student' && (
-                  <Button variant="default" size="sm">
-                    Enroll Now
-                  </Button>
+                  <div>
+                    {course.studentEnrolled.some(
+                      enrollment => enrollment.studentId === user.student?.studentId
+                    ) ? (
+                      <Link href={`/courses/${course.courseId}/learn`}>
+                        <Button variant="outline" size="sm">
+                          Continue Learning
+                        </Button>
+                      </Link>
+                    ) : (
+                      <EnrollButton courseId={course.courseId} />
+                    )}
+                  </div>
                 )}
               </div>
             </div>
