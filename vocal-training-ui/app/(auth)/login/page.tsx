@@ -1,8 +1,44 @@
+'use client'
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const res = await signIn('credentials', {
+        email: formData.get('email'),
+        password: formData.get('password'),
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError('Invalid credentials');
+      } else {
+        router.push('/courses');
+        router.refresh();
+      }
+    } catch (error) {
+      setError('Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <main className="min-h-screen">
@@ -15,8 +51,7 @@ export default function Login() {
           </div>
           <div className="right-cont w-1/2 flex items-center justify-center bg-white">
             <form
-              action=""
-              method="post"
+              onSubmit={handleSubmit}
               className="w-[400px] space-y-6 p-8"
             >
               <div className="text-center">
@@ -24,14 +59,22 @@ export default function Login() {
                 <p className="text-gray-600 mt-2">Please enter your details</p>
               </div>
               
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
+              
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input 
-                    type="text" 
-                    id="username" 
-                    placeholder="Enter your username"
+                    type="email" 
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email"
                     className="w-full"
+                    required
                   />
                 </div>
                 
@@ -39,15 +82,17 @@ export default function Login() {
                   <Label htmlFor="password">Password</Label>
                   <Input 
                     type="password" 
-                    id="password" 
+                    id="password"
+                    name="password"
                     placeholder="Enter your password"
                     className="w-full"
+                    required
                   />
                 </div>
               </div>
 
-              <Button className="w-full" size="lg">
-                Sign In
+              <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
 
               <p className="text-center text-sm text-gray-600">
