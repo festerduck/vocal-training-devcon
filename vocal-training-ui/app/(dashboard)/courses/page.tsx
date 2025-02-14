@@ -26,6 +26,13 @@ export default function CoursesPage() {
     // Add more courses as needed
   ];
 
+  const handleDeleteCourse = async (courseId: number) => {
+    if (window.confirm("Are you sure you want to delete this course?")) {
+      // Add your delete logic here
+      console.log("Deleting course:", courseId);
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
