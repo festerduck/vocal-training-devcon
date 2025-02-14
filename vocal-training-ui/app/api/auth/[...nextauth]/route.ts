@@ -1,13 +1,24 @@
 import { AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import NextAuth from "next-auth/next";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account"
+        }
+      }
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -20,9 +31,7 @@ export const authOptions: AuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
+          where: { email: credentials.email }
         });
 
         if (!user || !user.hashedPassword) {
@@ -47,13 +56,54 @@ export const authOptions: AuthOptions = {
       }
     })
   ],
-  session: {
-    strategy: "jwt"
+  callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+          });
+
+          if (!dbUser) {
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                fullName: user.name!,
+                role: Role.student,
+                student: {
+                  create: {}
+                }
+              }
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error("Sign in error:", error);
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+        token.role = "student";
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as Role;
+      }
+      return session;
+    }
   },
   pages: {
-    signIn: "/login"
+    signIn: "/login",
+    error: "/login"
   },
-  secret: process.env.NEXTAUTH_SECRET
+  debug: process.env.NODE_ENV === "development",
 };
 
 const handler = NextAuth(authOptions);
