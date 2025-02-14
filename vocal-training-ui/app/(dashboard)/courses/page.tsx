@@ -1,30 +1,37 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreVertical, Users, Clock } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
-export default function CoursesPage() {
-  // Mock data - replace with actual data fetching
-  const courses = [
-    {
-      id: 1,
-      title: "Vocal Training Basics",
-      status: "Published",
-      students: 24,
-      duration: "8 weeks",
-      lastUpdated: "2024-03-15",
-      thumbnail: "/course-1.jpg"
-    },
-    {
-      id: 2,
-      title: "Advanced Vocal Techniques",
-      status: "Draft",
-      students: 0,
-      duration: "12 weeks",
-      lastUpdated: "2024-03-14",
-      thumbnail: "/course-2.jpg"
-    },
-    // Add more courses as needed
-  ];
+async function getCourses(instructorId: string | null = null) {
+  try {
+    const courses = await prisma.course.findMany({
+      where: instructorId ? {
+        courseInstructorId: instructorId
+      } : undefined,
+      include: {
+        courseInstructor: {
+          include: {
+            user: true
+          }
+        },
+        studentEnrolled: true,
+        courseLessons: true
+      }
+    });
+    return courses;
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
+}
+
+export default async function CoursesPage() {
+  const user = await getCurrentUser();
+  const courses = await getCourses(
+    user?.instructor?.instructorId || null
+  );
 
   return (
     <div className="p-6">
@@ -32,86 +39,66 @@ export default function CoursesPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">My Courses</h1>
-          <p className="text-gray-600">Manage and create your vocal training courses</p>
+          <p className="text-gray-600">
+            {user?.role === 'instructor' 
+              ? 'Manage and create your vocal training courses'
+              : 'Browse available vocal training courses'
+            }
+          </p>
         </div>
-        <Link href="/courses/create">
-          <Button className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Create New Course
-          </Button>
-        </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <Button variant="outline" className="text-primary">
-          All Courses
-        </Button>
-        <Button variant="ghost">
-          Published
-        </Button>
-        <Button variant="ghost">
-          Drafts
-        </Button>
-        <Button variant="ghost">
-          Archived
-        </Button>
+        {user?.role === 'instructor' && (
+          <Link href="/courses/create">
+            <Button className="flex items-center gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Create New Course
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => (
-          <div key={course.id} className="bg-white rounded-lg border hover:shadow-md transition-shadow">
-            {/* Course Thumbnail */}
-            <div className="relative h-48 bg-gray-100 rounded-t-lg">
-              {course.thumbnail && (
-                // Note: Add actual images and configure next.config.js for domains
-                <div className="absolute inset-0 bg-gray-200 rounded-t-lg" />
-              )}
-              <div className="absolute top-3 right-3">
-                <Button variant="ghost" size="icon" className="bg-white/90 rounded-full">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  course.status === 'Published' 
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {course.status}
-                </span>
-              </div>
-            </div>
-
+        {courses.map((course: any) => (
+          <div key={course.courseId} className="bg-white rounded-lg border hover:shadow-md transition-shadow">
             {/* Course Info */}
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-2">
-                <Link href={`/courses/${course.id}`} className="hover:text-primary">
-                  {course.title}
+                <Link href={`/courses/${course.courseId}`} className="hover:text-primary">
+                  {course.courseName}
                 </Link>
               </h3>
               
+              <p className="text-gray-600 text-sm mb-4">
+                {course.courseDescription}
+              </p>
+
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{course.students} students</span>
+                  <span>{course.studentEnrolled.length} students</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{course.duration}</span>
+                  <span>{course.courseLessons.length} lessons</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">
-                  Last updated: {new Date(course.lastUpdated).toLocaleDateString()}
+                  By {course.courseInstructor.user.fullName}
                 </span>
-                <Link href={`/courses/${course.id}/edit`}>
-                  <Button variant="ghost" size="sm">
-                    Edit Course
+                {user?.role === 'instructor' && course.courseInstructorId === user.instructor?.instructorId && (
+                  <Link href={`/courses/${course.courseId}/edit`}>
+                    <Button variant="ghost" size="sm">
+                      Edit Course
+                    </Button>
+                  </Link>
+                )}
+                {user?.role === 'student' && (
+                  <Button variant="default" size="sm">
+                    Enroll Now
                   </Button>
-                </Link>
+                )}
               </div>
             </div>
           </div>
@@ -126,11 +113,17 @@ export default function CoursesPage() {
               <PlusCircle className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
-          <p className="text-gray-600 mb-4">Create your first vocal training course</p>
-          <Link href="/courses/create">
-            <Button>Create New Course</Button>
-          </Link>
+          <h3 className="text-lg font-semibold mb-2">No courses available</h3>
+          {user?.role === 'instructor' ? (
+            <>
+              <p className="text-gray-600 mb-4">Create your first vocal training course</p>
+              <Link href="/courses/create">
+                <Button>Create New Course</Button>
+              </Link>
+            </>
+          ) : (
+            <p className="text-gray-600 mb-4">Check back later for new courses</p>
+          )}
         </div>
       )}
     </div>
