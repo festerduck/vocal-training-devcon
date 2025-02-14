@@ -1,60 +1,46 @@
-"use client"
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { useRouter } from "next/navigation";
+
 import { getCurrentUser } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { CourseForm } from "@/components/CourseForm";
+import { use } from "react";
 
-interface CourseEditPageProps {
+interface Props {
   params: {
     courseId: string;
   };
 }
 
-async function getCourse(courseId: string) {
-  try {
-    const course = await prisma.course.findUnique({
-      where: {
-        courseId: courseId,
-      },
-      include: {
-        courseLessons: true,
-        courseInstructor: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
-    return course;
-  } catch (error) {
-    console.error("Error fetching course:", error);
-    return null;
-  }
-}
-
-export default async function EditCoursePage({ params }: CourseEditPageProps) {
+export default async function EditCoursePage({ params }: Props) {
   const user = await getCurrentUser();
-  const course = await getCourse(params.courseId);
-
+  
   if (!user || user.role !== 'instructor') {
     redirect('/login');
   }
+
+  if (!user.instructor) {
+    redirect('/courses');
+  }
+
+  const course = await prisma.course.findUnique({
+    where: { courseId: params.courseId },
+    include: {
+      courseLessons: true,
+      courseInstructor: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
 
   if (!course) {
     redirect('/courses');
   }
 
   // Verify the instructor owns this course
-  if (course.courseInstructorId !== user.instructor?.instructorId) {
+  if (course.courseInstructorId !== user.instructor.instructorId) {
     redirect('/courses');
   }
 

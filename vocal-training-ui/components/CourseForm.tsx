@@ -69,38 +69,38 @@ export function CourseForm({ course, instructorId }: CourseFormProps) {
     setIsLessonFormOpen(false);
   };
 
-  const handleSubmit = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const handleSubmit = () => {
+    setIsLoading(true);
+    setError(null);
 
-      const url = course 
-        ? `/api/courses/${course.courseId}`
-        : '/api/courses';
+    const url = course 
+      ? `/api/courses/${course.courseId}`
+      : '/api/courses';
 
-      const response = await fetch(url, {
-        method: course ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          courseInstructorId: instructorId
-        }),
+    fetch(url, {
+      method: course ? 'PUT' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...formData,
+        courseInstructorId: instructorId
+      }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message);
+        }
+        router.push('/courses');
+        router.refresh();
+      })
+      .catch((error) => {
+        setError(error.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
-
-      router.push('/courses');
-      router.refresh();
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
