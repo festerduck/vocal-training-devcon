@@ -5,31 +5,24 @@ import { getCurrentUser } from "@/lib/session";
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
-    
-    if (!user?.instructor?.instructorId) {
-      return NextResponse.json(
-        { message: "Unauthorized: Instructor access required" },
-        { status: 401 }
-      );
+    if (!user || user.role !== 'instructor') {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const {
-      courseName,
-      courseDescription,
-      tags,
-      lessons
-    } = await req.json();
+    const { courseName, courseDescription, lessons, courseInstructorId } = await req.json();
 
     const course = await prisma.course.create({
       data: {
         courseName,
         courseDescription,
-        courseInstructorId: user.instructor.instructorId,
+        courseInstructorId,
         courseLessons: {
           create: lessons.map((lesson: any) => ({
-            lessonName: lesson.title,
-            lessonDescription: lesson.description,
-            practiceGuide: lesson.duration
+            lessonName: lesson.lessonName || "",
+            lessonDescription: lesson.lessonDescription || "",
+            practiceGuide: lesson.practiceGuide || null,
+            video: null,
+            audio: null
           }))
         }
       },
@@ -43,12 +36,9 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.json(course, { status: 201 });
+    return NextResponse.json(course);
   } catch (error) {
-    console.error("Course creation error:", error);
-    return NextResponse.json(
-      { message: "Error creating course" },
-      { status: 500 }
-    );
+    console.error("[COURSE_CREATE]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 } 
