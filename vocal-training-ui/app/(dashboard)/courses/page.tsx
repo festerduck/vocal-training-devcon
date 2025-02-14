@@ -31,7 +31,7 @@ export default function CoursesPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold mb-2">My Courses</h1>
+          <h1 className="text-2xl font-bold mb-2">Published Courses</h1>
           <p className="text-gray-600">Manage and create your vocal training courses</p>
         </div>
         <Link href="/courses/create">
@@ -40,22 +40,6 @@ export default function CoursesPage() {
             Create New Course
           </Button>
         </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <Button variant="outline" className="text-primary">
-          All Courses
-        </Button>
-        <Button variant="ghost">
-          Published
-        </Button>
-        <Button variant="ghost">
-          Drafts
-        </Button>
-        <Button variant="ghost">
-          Archived
-        </Button>
       </div>
 
       {/* Course Grid */}
@@ -74,11 +58,10 @@ export default function CoursesPage() {
                 </Button>
               </div>
               <div className="absolute bottom-3 left-3">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  course.status === 'Published' 
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-sm ${course.status === 'Published'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-800'
+                  }`}>
                   {course.status}
                 </span>
               </div>
@@ -91,7 +74,7 @@ export default function CoursesPage() {
                   {course.title}
                 </Link>
               </h3>
-              
+
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
